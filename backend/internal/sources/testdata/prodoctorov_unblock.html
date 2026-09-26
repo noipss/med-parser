@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width,initial-scale=1"
+    >
+    <title>
+        Ограничение доступа
+    </title>
+    <link
+        href="/static/css/bootstrap/bootstrap.min.css"
+        rel="stylesheet"
+    >
+</head>
+<body>
+    
+    <div class="container w-auto">
+        <div class="vh-100 d-flex justify-content-center align-items-center">
+            <div>
+                <img
+                    src="/static/images/exclamation-mark.svg"
+                    alt="Иконка"
+                    class="d-block mx-auto text-center"
+                >
+                <p class="fs-2 fw-bold text-center text-dark my-4">
+                    
+                        Доступ ограничен
+                    
+                </p>
+                <p class="fs-4 text-center text-dark my-4">
+                    
+                        С вашего IP-адреса (207.241.237.99) обнаружена подозрительная активность.<br>
+                        Чтобы продолжить, подтвердите, что вы не робот.
+                    
+                </p>
+        
+                
+                    <form
+                        method="POST"
+                        id="unban-form"
+                        class="text-center d-flex justify-content-center"
+                    >
+                        
+                            <div
+                                id="captcha-container"
+                                class="smart-captcha"
+                                data-callback="captchaOK"
+                                data-sitekey="ysc1_w5EccnKcgnBRndOz4hbrYOuOafmvWISGXQHa4O7If42ddc58"
+                            ></div>
+                        
+                    </form>
+                
+            </div>
+        </div>
+    </div>
+
+    
+        <script src="https://smartcaptcha.cloud.yandex.ru/captcha.js" defer></script>
+    
+
+    <script>
+        function captchaOK () {
+            document.getElementById('unban-form').submit()
+        }
+
+        try {
+            document.addEventListener('click', ({ target }) => {
+                if (target.closest('#update-button')) {
+                  window.location.reload()
+                }
+            })
+        } catch {}
+    </script>
+
+
+    <script src="/static/js/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/static/js/bootstrap/bootstrap.min.js"></script>
+</body>
+</html>

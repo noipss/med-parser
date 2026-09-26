@@ -1,0 +1,7 @@
+node_modules/
+frontend/dist/
+bin/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/
+backend/internal/web/dist/assets/

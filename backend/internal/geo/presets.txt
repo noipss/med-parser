@@ -1,0 +1,2 @@
+Ростов и соседние регионы|region:Ростовская область;region:Краснодарский край;region:Ставропольский край;region:Волгоградская область;region:Воронежская область;region:Республика Калмыкия
+Ростовская агломерация|city:rostov-na-donu;city:bataysk;city:aksay;city:azov;city:novocherkassk
