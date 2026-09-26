@@ -57,7 +57,8 @@ button, select, input { font: inherit; color: inherit; }
 .badge-running::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 8px; animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .3; } }
 
-.controls { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.controls { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.controls .main-btn { margin-top: 20px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 240px; }
 .field.grow { flex: 1; }
 .field > label:first-child, .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
@@ -72,6 +73,19 @@ select, input.search { height: 38px; padding: 0 10px; border: 1px solid var(--bo
 .target-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 13px; }
 .target-chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
 .link { border: 0; background: none; color: var(--muted); cursor: pointer; text-decoration: underline; font-size: 13px; }
+.neighbors { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; }
+.nb-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nb-actions { display: inline-flex; gap: 10px; }
+.nb-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.nb-list.second { opacity: .9; }
+.nb-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; cursor: pointer; background: var(--bg); }
+.nb-item.on { border-color: var(--accent); background: var(--accent-soft); }
+.nb-item input { margin: 0; }
+.radius { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; margin-right: 6px; }
+.link.active { color: var(--accent); font-weight: 600; text-decoration: none; }
+.summary { margin-top: 6px; color: var(--muted); font-size: 13px; }
+.summary strong { color: var(--text); }
+.link:disabled { opacity: .5; cursor: default; }
 .check { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; cursor: pointer; }
 
 .main-btn { height: 64px; min-width: 180px; border: 0; border-radius: 10px; font-size: 18px; font-weight: 700; cursor: pointer; color: #fff; transition: filter .15s; }

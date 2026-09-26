@@ -100,19 +100,19 @@
 Краснодарский край|Лабинск|labinsk|labinsk|
 Краснодарский край|Белореченск|belorechensk|belorechensk|
 Ростовская область|Ростов-на-Дону|rostov-na-donu|rostov-na-donu|rostov
-Ростовская область|Новочеркасск|novocherkassk|novocherkassk|
-Ростовская область|Батайск|bataysk|batajsk|
+Ростовская область|Новочеркасск|novocherkassk|novocherkassk|rostov/gorod-novocherkassk
+Ростовская область|Батайск|bataysk|batajsk|rostov/gorod-batajsk
 Ростовская область|Волгодонск|volgodonsk|volgodonsk|
 Ростовская область|Новошахтинск|novoshahtinsk|novoshahtinsk|
-Ростовская область|Гуково|gukovo|gukovo|
+Ростовская область|Гуково|gukovo|gukovo|rostov/gorod-gukovo
 Ростовская область|Красный Сулин||krasnyj-sulin|
 Ростовская область|Таганрог|taganrog|taganrog|taganrog
 Ростовская область|Шахты|shahty|shahty|shahty
-Ростовская область|Азов|azov|azov|
+Ростовская область|Азов|azov|azov|rostov/gorod-azov
 Ростовская область|Каменск-Шахтинский|kamensk-shahtinskiy|kamensk-shahtinskij|
 Ростовская область|Сальск|salsk|salsk|
 Ростовская область|Белая Калитва|belaya-kalitva|belaya-kalitva|
-Ростовская область|Аксай|aksay|aksaj|
+Ростовская область|Аксай|aksay|aksaj|rostov/gorod-aksaj
 Ростовская область|Миллерово|millerovo|millerovo|
 Ростовская область|Зерноград||zernograd|
 Ростовская область|Константиновск||konstantinovsk|
@@ -243,7 +243,6 @@
 Приморский край|Уссурийск||ussurijsk|
 Приморский край|Артём||artyom|
 Приморский край|Арсеньев||arsenev|
-Приморский край|Находка|||
 Приморский край|Партизанск||partizansk|
 Республика Мордовия|Саранск|saransk||
 Республика Марий Эл|Йошкар-Ола|yoshkar-ola||

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Preset, type Region, type Status } from "./api";
+import NeighborPicker from "./NeighborPicker";
 
 const STATE_LABEL: Record<Status["state"], string> = {
   idle: "Ожидание",
@@ -19,12 +20,14 @@ type Prefs = {
   mode: "auto" | "browser";
   showBrowser: boolean;
   withFD: boolean; // + врачи функциональной диагностики
+  extraRegions: string[]; // отмеченные вручную ближайшие области
+  extraCities: string[]; // отмеченные ближайшие города (id)
 };
 
-const DEFAULT_TARGET = "preset:Ростов и соседние регионы";
+const DEFAULT_TARGET = "region:Ростовская область";
 
 function loadPrefs(): Prefs {
-  const def: Prefs = { target: DEFAULT_TARGET, targets: [], mode: "auto", showBrowser: true, withFD: false };
+  const def: Prefs = { target: DEFAULT_TARGET, targets: [], mode: "auto", showBrowser: true, withFD: false, extraRegions: [], extraCities: [] };
   try {
     return { ...def, ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") };
   } catch {
@@ -43,6 +46,7 @@ function formatDuration(sec: number): string {
 export default function App() {
   const [regions, setRegions] = useState<Region[]>([]);
   const [presets, setPresets] = useState<Preset[]>([]);
+  const [neighbors, setNeighbors] = useState<Record<string, string[]>>({});
   const [status, setStatus] = useState<Status | null>(null);
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
   const [filter, setFilter] = useState("");
@@ -63,6 +67,7 @@ export default function App() {
   useEffect(() => {
     api.regions().then(setRegions).catch((e) => setError(String(e.message || e)));
     api.presets().then(setPresets).catch(() => setPresets([]));
+    api.neighbors().then(setNeighbors).catch(() => setNeighbors({}));
   }, []);
 
   // Опрос статуса: чаще во время сессии.
@@ -146,6 +151,67 @@ export default function App() {
     }
   }, [filtered, filteredPresets, filter, prefs.target]);
 
+  // Регион выбранной цели: для города — регион, в котором он находится.
+  const cityRegion = useMemo(
+    () => new Map(regions.flatMap((r) => r.cities.map((c) => [c.id, r.name] as const))),
+    [regions],
+  );
+  const baseIsCity = prefs.target.startsWith("city:");
+  const baseRegion = prefs.target.startsWith("region:")
+    ? prefs.target.slice("region:".length)
+    : baseIsCity
+      ? (cityRegion.get(prefs.target.slice("city:".length)) ?? null)
+      : null;
+
+  // При смене основного региона отметки соседей сбрасываются.
+  const prevBase = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (regions.length === 0) return;
+    if (prevBase.current !== undefined && prevBase.current !== baseRegion) {
+      setPrefs((p) => (p.extraRegions.length ? { ...p, extraRegions: [] } : p));
+    }
+    prevBase.current = baseRegion;
+  }, [baseRegion, regions.length]);
+
+  // Ближайшие города зависят от выбранного города: при его смене отметки сбрасываются.
+  const baseCityId = baseIsCity ? prefs.target.slice("city:".length) : null;
+  const prevCity = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (prevCity.current !== undefined && prevCity.current !== baseCityId) {
+      setPrefs((p) => (p.extraCities.length ? { ...p, extraCities: [] } : p));
+    }
+    prevCity.current = baseCityId;
+  }, [baseCityId]);
+
+  // Итоговая цель сессии: основная цель (или список) + отмеченные области.
+  const finalTargets = useMemo(() => {
+    const base = prefs.targets.length > 0 ? prefs.targets : [prefs.target];
+    return [
+      ...new Set([
+        ...base,
+        ...prefs.extraCities.map((c) => `city:${c}`),
+        ...prefs.extraRegions.map((r) => `region:${r}`),
+      ]),
+    ];
+  }, [prefs.targets, prefs.target, prefs.extraRegions, prefs.extraCities]);
+
+  const summary = useMemo(() => {
+    const byRegion = new Map(regions.map((r) => [r.name, r.cities.map((c) => c.id)]));
+    const presetTarget = new Map(presets.map((p) => [p.name, p.target]));
+    const ids = new Set<string>();
+    const resolve = (t: string, depth = 0) => {
+      const i = t.indexOf(":");
+      const kind = t.slice(0, i);
+      const val = t.slice(i + 1);
+      if (kind === "city") ids.add(val);
+      else if (kind === "region") byRegion.get(val)?.forEach((id) => ids.add(id));
+      else if (kind === "preset" && depth < 3) presetTarget.get(val)?.split(";").forEach((x) => resolve(x, depth + 1));
+    };
+    finalTargets.forEach((t) => resolve(t));
+    const regs = new Set([...ids].map((id) => cityRegion.get(id)));
+    return { cities: ids.size, regions: regs.size };
+  }, [finalTargets, regions, presets, cityRegion]);
+
   const addTarget = () =>
     setPrefs((p) => (p.targets.includes(p.target) ? p : { ...p, targets: [...p.targets, p.target] }));
   const removeTarget = (t: string) => setPrefs((p) => ({ ...p, targets: p.targets.filter((x) => x !== t) }));
@@ -154,7 +220,7 @@ export default function App() {
     setError("");
     setBusy(true);
     try {
-      const target = prefs.targets.length > 0 ? prefs.targets.join(";") : prefs.target;
+      const target = finalTargets.join(";");
       setStatus(
         running
           ? await api.stop()
@@ -261,6 +327,21 @@ export default function App() {
               )}
             </div>
           )}
+          <NeighborPicker
+            baseRegion={baseRegion}
+            baseIsCity={baseIsCity}
+            baseCityId={baseCityId}
+            selectedCities={prefs.extraCities}
+            onCitiesChange={(extraCities) => setPrefs((p) => ({ ...p, extraCities }))}
+            regions={regions}
+            neighbors={neighbors}
+            selected={prefs.extraRegions}
+            onChange={(extraRegions) => setPrefs((p) => ({ ...p, extraRegions }))}
+            disabled={running}
+          />
+          <div className="summary">
+            Будет собрано: <strong>{summary.regions}</strong> рег., <strong>{summary.cities}</strong> гор.
+          </div>
         </div>
         <div className="field">
           <label htmlFor="mode">Режим</label>

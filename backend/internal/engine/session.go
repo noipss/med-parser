@@ -192,7 +192,7 @@ func (s *session) add(src sources.Source, city *geo.City, docs []sources.Doctor)
 				c = cc
 			}
 		}
-		key := normFIO(d.FIO) + "|" + c.ID
+		key := docKey(d.FIO, c)
 		if !d.Actual {
 			if s.docs[key] == nil {
 				s.skipped[key] = true
@@ -203,11 +203,11 @@ func (s *session) add(src sources.Source, city *geo.City, docs []sources.Doctor)
 		delete(s.skipped, key)
 		a := s.docs[key]
 		if a == nil {
-			a = &agg{city: c}
+			a = &agg{}
 			s.docs[key] = a
 			fresh = append(fresh, a)
 		}
-		a.merge(d, src.Name(), now)
+		a.merge(d, src.Name(), c, now)
 		s.dirty[key] = true
 	}
 	views := make([]DoctorView, 0, len(fresh))
@@ -231,6 +231,28 @@ func (s *session) add(src sources.Source, city *geo.City, docs []sources.Doctor)
 	})
 }
 
+// docKey — ключ записи. Полное ФИО склеивается в пределах региона: врач, который
+// принимает в Ростове и Батайске, — одна строка. Инициалы («Иванова А. С.») — только в пределах города.
+func docKey(fio string, c *geo.City) string {
+	if fullName(fio) {
+		return normFIO(fio) + "|r:" + c.Region
+	}
+	return normFIO(fio) + "|c:" + c.ID
+}
+
+func fullName(fio string) bool {
+	f := strings.Fields(fio)
+	if len(f) < 3 {
+		return false
+	}
+	for _, w := range f {
+		if len([]rune(w)) <= 2 || strings.HasSuffix(w, ".") {
+			return false
+		}
+	}
+	return true
+}
+
 // normFIO — ключ врача без учёта регистра, «ё» и порядка слов:
 // «Иванов Иван Иванович» и «Иван Иванович Иванов» — один человек.
 func normFIO(s string) string {
@@ -242,13 +264,20 @@ func normFIO(s string) string {
 
 // agg — врач, собранный из одного или нескольких источников.
 type agg struct {
-	city                    *geo.City
+	cities                  []*geo.City
 	fio, position, exp      string
 	specs, works, srcs, urs []string
 	checked                 time.Time
 }
 
-func (a *agg) merge(d sources.Doctor, src string, now time.Time) {
+func (a *agg) merge(d sources.Doctor, src string, city *geo.City, now time.Time) {
+	known := false
+	for _, c := range a.cities {
+		known = known || c == city
+	}
+	if !known {
+		a.cities = append(a.cities, city)
+	}
 	if len([]rune(d.FIO)) > len([]rune(a.fio)) { // полное ФИО лучше инициалов
 		a.fio = d.FIO
 	}
@@ -269,7 +298,7 @@ func (a *agg) record(sid int64) store.Record {
 	return store.Record{
 		FIO: a.fio, FIOKey: normFIO(a.fio), Position: a.position,
 		Specialties: strings.Join(a.specs, "; "), Workplaces: strings.Join(a.works, "; "),
-		Experience: a.exp, City: a.city.Name, Region: a.city.Region,
+		Experience: a.exp, City: a.cityNames(), Region: a.cities[0].Region,
 		Sources: strings.Join(a.srcs, ", "), URLs: strings.Join(a.urs, " "),
 		CheckedAt: a.checked, SessionID: sid,
 	}
@@ -287,7 +316,7 @@ func (a *agg) view() DoctorView {
 		w = a.works[0]
 	}
 	return DoctorView{FIO: a.fio, Position: a.position, Sphere: strings.Join(other, ", "), Workplace: w,
-		City: a.city.Name, Source: strings.Join(a.srcs, ", ")}
+		City: a.cityNames(), Source: strings.Join(a.srcs, ", ")}
 }
 
 func union(list []string, add ...string) []string {
@@ -307,4 +336,12 @@ func union(list []string, add ...string) []string {
 		}
 	}
 	return list
+}
+
+func (a *agg) cityNames() string {
+	names := make([]string, len(a.cities))
+	for i, c := range a.cities {
+		names[i] = c.Name
+	}
+	return strings.Join(names, ", ")
 }

@@ -263,3 +263,23 @@ func TestFDSourcesOptIn(t *testing.T) {
 		t.Errorf("фильтр по сайту: %d", n)
 	}
 }
+
+func TestDocKeyMergesAcrossCitiesOfRegion(t *testing.T) {
+	cat, _ := geo.Load()
+	rostov, bataysk, krasnodar := cat.City("rostov-na-donu"), cat.City("bataysk"), cat.City("krasnodar")
+	if docKey("Иванова Анна Сергеевна", rostov) != docKey("Анна Сергеевна Иванова", bataysk) {
+		t.Error("один врач в Ростове и Батайске должен склеиваться")
+	}
+	if docKey("Иванова Анна Сергеевна", rostov) == docKey("Иванова Анна Сергеевна", krasnodar) {
+		t.Error("тёзки из разных регионов не должны склеиваться")
+	}
+	if docKey("Иванова А. С.", rostov) == docKey("Иванова А. С.", bataysk) {
+		t.Error("ФИО с инициалами склеивается только в пределах города")
+	}
+	a := &agg{}
+	a.merge(sources.Doctor{FIO: "Иванова Анна Сергеевна", Position: "Врач УЗИ"}, "zoon", rostov, time.Now())
+	a.merge(sources.Doctor{FIO: "Иванова Анна Сергеевна", Workplaces: []string{"Клиника Б"}}, "napopravku", bataysk, time.Now())
+	if r := a.record(1); r.City != "Ростов-на-Дону, Батайск" || r.Sources != "zoon, napopravku" || r.Region != "Ростовская область" {
+		t.Errorf("запись: %+v", r)
+	}
+}

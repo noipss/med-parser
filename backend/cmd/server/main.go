@@ -126,6 +126,8 @@ func (a *api) routes() http.Handler {
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /api/regions", a.regions)
 	mux.HandleFunc("GET /api/presets", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, a.cat.Presets) })
+	mux.HandleFunc("GET /api/nearby", a.nearby)
+	mux.HandleFunc("GET /api/neighbors", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, a.cat.Neighbors) })
 	mux.HandleFunc("GET /api/status", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, a.eng.Status()) })
 	mux.HandleFunc("POST /api/start", a.start)
 	mux.HandleFunc("POST /api/stop", func(w http.ResponseWriter, r *http.Request) { a.eng.Stop(); writeJSON(w, a.eng.Status()) })
@@ -160,6 +162,33 @@ func (a *api) regions(w http.ResponseWriter, _ *http.Request) {
 			rd.Cities = append(rd.Cities, cd)
 		}
 		out = append(out, rd)
+	}
+	writeJSON(w, out)
+}
+
+type nearbyDTO struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Region  string   `json:"region"`
+	Km      int      `json:"km"`
+	Sources []string `json:"sources"`
+}
+
+// nearby — города в радиусе km (по умолчанию 50) от города ?city=<id>.
+func (a *api) nearby(w http.ResponseWriter, r *http.Request) {
+	km, err := strconv.ParseFloat(r.URL.Query().Get("km"), 64)
+	if err != nil || km <= 0 || km > 1000 {
+		km = 50
+	}
+	out := []nearbyDTO{}
+	for _, n := range a.cat.Nearby(r.URL.Query().Get("city"), km) {
+		d := nearbyDTO{ID: n.City.ID, Name: n.City.Name, Region: n.City.Region, Km: int(n.Km + 0.5)}
+		for _, s := range a.eng.Sources() {
+			if !s.Extra() && n.City.Slugs[s.Site()] != "" {
+				d.Sources = append(d.Sources, s.Title())
+			}
+		}
+		out = append(out, d)
 	}
 	writeJSON(w, out)
 }

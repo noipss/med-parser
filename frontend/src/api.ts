@@ -2,6 +2,7 @@
 
 export type City = { id: string; name: string; sources: string[] };
 export type Region = { name: string; cities: City[] };
+export type NearbyCity = { id: string; name: string; region: string; km: number; sources: string[] };
 export type Preset = { name: string; target: string; summary: string; cities: number };
 
 export type SourceStat = {
@@ -67,6 +68,9 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   regions: () => call<Region[]>("/api/regions"),
   presets: () => call<Preset[]>("/api/presets"),
+  nearby: (city: string, km: number) =>
+    call<NearbyCity[]>(`/api/nearby?city=${encodeURIComponent(city)}&km=${km}`),
+  neighbors: () => call<Record<string, string[]>>("/api/neighbors"),
   status: () => call<Status>("/api/status"),
   start: (o: StartOptions) => call<Status>("/api/start", { method: "POST", body: JSON.stringify(o) }),
   stop: () => call<Status>("/api/stop", { method: "POST" }),
